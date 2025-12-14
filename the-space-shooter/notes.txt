@@ -1,0 +1,14 @@
+########## TASKS ##########
+
+1. Build the game state
++ Select the spaceship
++ Enter the game and the player should be able to move using left-right keys
+
+2. Make a background-moving effect using Particles
+3. Build asteroids and load them into the game
+4. If the time allows, build a sound system
+
+########## GAME PLAN ##########
+
+
+
