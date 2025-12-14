@@ -65,8 +65,12 @@ class Game():
         )
         
         # timer
+        if current_time < 10:
+            displayed_current_time = f"0{current_time}"
+        else:
+            displayed_current_time = str(current_time)
         self.timer_text = self.timer_font.render(
-            f"00:{current_time}", True, WHITE
+            f"00:{displayed_current_time}", True, WHITE
         )
         self.total_time = 30 # seconds
 

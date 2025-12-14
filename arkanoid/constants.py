@@ -19,7 +19,7 @@ BALL_HEIGHT = 25
 BALL_SPEED = 5
 
 # SOUND FX
-BRICK_HIT_SFX = "./assets/sounds/brick-hit-sfx.mp3"
-LOSE_SFX = "./assets/sounds/lose-sfx.mp3"
-WIN_SFX = "./assets/sounds/win-sfx.mp3"
-WALL_HIT_SFX = "./assets/sounds/wall-hit-sfx.mp3"
+BRICK_HIT_SFX = "./assets/sounds/brick-hit-sfx.ogg"
+LOSE_SFX = "./assets/sounds/lose-sfx.ogg"
+WIN_SFX = "./assets/sounds/win-sfx.ogg"
+WALL_HIT_SFX = "./assets/sounds/wall-hit-sfx.ogg"

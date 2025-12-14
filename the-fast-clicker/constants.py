@@ -1,0 +1,4 @@
+SC_WIDTH = 500
+SC_HEIGHT = 500
+FPS = 60
+GAME_TITLE = "The Fast Clicker"

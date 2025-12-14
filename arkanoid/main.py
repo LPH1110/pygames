@@ -1,3 +1,4 @@
+import asyncio
 import pygame as pg
 from constants import (
     SC_WIDTH,
@@ -115,7 +116,7 @@ class Game():
             return True # win
         return None
         
-    def run(self):
+    async def run(self):
         is_running = True
         winner = None
 
@@ -150,9 +151,10 @@ class Game():
 
 
             pg.display.update()
-            self.clock.tick(FPS)    
+            self.clock.tick(FPS) 
+            await asyncio.sleep(0)   
     
 
 if __name__ == "__main__":
     game = Game()
-    game.run()
+    asyncio.run(game.run())
