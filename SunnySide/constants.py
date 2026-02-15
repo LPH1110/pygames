@@ -1,0 +1,4 @@
+SC_WIDTH = 800
+SC_HEIGHT = 600
+GAME_TITLE = "SunnySide"
+FPS = 60
