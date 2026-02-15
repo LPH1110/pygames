@@ -1,6 +1,6 @@
 import pygame as pg
 from constants import *
-from sprites.player import Player
+from sprites.player.player import Player
 
 class SunnySide():
     def __init__(self):
