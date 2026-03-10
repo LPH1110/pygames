@@ -4,6 +4,7 @@ from constants import *
 from sprites.player import Player
 from sprites.base import SpriteSheet
 from map_generator import World 
+from sound_manager import sound_manager
 
 class Game():
     def __init__(self):
@@ -21,6 +22,11 @@ class Game():
 
         # Camera scroll variable
         self.scroll = 0
+
+        # UI Elements
+        self.coin_font = pg.font.SysFont("verdana", 24, bold=True)
+        self.coin_img = pg.image.load("assets/HUD/coins_hud.png").convert_alpha()
+        self.coin_img = pg.transform.scale(self.coin_img, (32, 32))
 
         player_animations = {
             "idle": SpriteSheet(PLAYER_IDLE_PATH, num_frames=9, scale=PLAYER_SCALE),
@@ -57,6 +63,13 @@ class Game():
             self.player.update(self.world)
             self.player.draw(self.screen, self.scroll)
             
+            # --- Draw UI ---
+            self.screen.blit(self.coin_img, (20, 20))
+            coin_text = self.coin_font.render(f"x {self.player.coins}", True, (255, 255, 255))
+            coin_text_outline = self.coin_font.render(f"x {self.player.coins}", True, (0, 0, 0))
+            self.screen.blit(coin_text_outline, (62, 22))
+            self.screen.blit(coin_text, (60, 20))
+
             pg.display.update()
             self.clock.tick(FPS)
 

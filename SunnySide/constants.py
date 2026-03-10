@@ -12,4 +12,6 @@ PLAYER_JUMP_PATH = "./assets/Human/JUMP/base_jump_strip9.png"
 PLAYER_ATTACK_PATH = "./assets/Human/ATTACK/base_attack_strip10.png"
 BG_PATH = "./assets/Background/background.png"
 TILE_PATH = "./Tileset.png"
+SOUND_PATH = "./assets/Sounds/"
+
 PLAYER_SCALE = 2

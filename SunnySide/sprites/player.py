@@ -1,6 +1,9 @@
 import pygame as pg
 from sprites.base import BaseSprite
 from constants import SC_WIDTH, SC_HEIGHT
+import pygame.sprite as sprite
+
+from sound_manager import sound_manager
 
 class Player(BaseSprite):
     def __init__(self, animations, x, y, speed):
@@ -12,6 +15,7 @@ class Player(BaseSprite):
         self.direction_y = 0
         self.gravity = 0.8
         self.on_ground = False
+        self.coins = 0
 
     def respawn(self):
         """Resets the player back to the starting point"""
@@ -29,6 +33,7 @@ class Player(BaseSprite):
         if keys[pg.K_j] and not self.is_attacking:
             self.is_attacking = True
             self.state = "attack"
+            sound_manager.play('attack')
             self.frame_index = 0 # Reset về frame đầu tiên ngay lập tức
 
         dx = 0
@@ -86,6 +91,14 @@ class Player(BaseSprite):
         else:
             self.hitbox.x += dx
             self.hitbox.y += dy
+            
+        # Kiểm tra va chạm với Coins
+        if world:
+            for coin in list(world.coins):
+                if self.hitbox.colliderect(coin.hitbox):
+                    sound_manager.play('coin')
+                    coin.kill()
+                    self.coins += 1
 
         # Cảnh rơi xuống hố
         if self.hitbox.top >= SC_HEIGHT + 200:
