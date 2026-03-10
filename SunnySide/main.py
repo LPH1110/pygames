@@ -51,6 +51,7 @@ class Game():
             if self.scroll > self.world.map_width - SC_WIDTH:
                 self.scroll = self.world.map_width - SC_WIDTH
 
+            self.world.update()
             self.world.draw(self.screen, self.scroll)
 
             self.player.update(self.world)

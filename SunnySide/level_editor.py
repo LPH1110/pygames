@@ -56,6 +56,18 @@ def load_tileset(filename):
 
 tile_list = load_tileset('Tileset.png')
 
+try:
+    coin_img = pygame.image.load('./assets/Environment/Coin.png').convert_alpha()
+    tile_list.append(pygame.transform.scale(coin_img.subsurface((0, 0, 10, 10)), (TILE_SIZE, TILE_SIZE)))
+except Exception as e:
+    tile_list.append(pygame.Surface((TILE_SIZE, TILE_SIZE)))
+
+try:
+    flag_img = pygame.image.load('./assets/Environment/Flag.png').convert_alpha()
+    tile_list.append(pygame.transform.scale(flag_img.subsurface((0, 0, 48, 48)), (TILE_SIZE, TILE_SIZE)))
+except Exception as e:
+    tile_list.append(pygame.Surface((TILE_SIZE, TILE_SIZE)))
+
 def save_history():
     history_stack.append(copy.deepcopy(world_data))
     if len(history_stack) > 50: history_stack.pop(0)
