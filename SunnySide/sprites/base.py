@@ -42,6 +42,7 @@ class BaseSprite(pg.sprite.Sprite):
         
         self.image = first_frame
         self.rect = self.image.get_rect()
+        self.mask = pg.mask.from_surface(self.image)
         self.speed = speed
         self.animation_speed = 0.3
 
@@ -64,10 +65,13 @@ class BaseSprite(pg.sprite.Sprite):
         temp_img = frames[int(self.frame_index)]
         self.image = pg.transform.flip(temp_img, self.flip, False)
 
+        # Cập nhật mask sau khi lật/đổi frame
+        self.mask = pg.mask.from_surface(self.image)
+
         # Luôn giữ ảnh bám theo chân (midbottom) của hitbox
         self.rect = self.image.get_rect(midbottom=self.hitbox.midbottom)
         return False
 
-    def draw(self, surface: pg.Surface):
+    def draw(self, surface: pg.Surface, scroll: int = 0):
         # pg.draw.rect(surface, (255,0,0), self.hitbox, 1) # Vẽ hitbox đỏ
-        surface.blit(self.image, self.rect)
+        surface.blit(self.image, (self.rect.x - scroll, self.rect.y))

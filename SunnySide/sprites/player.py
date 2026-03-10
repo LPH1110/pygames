@@ -11,7 +11,7 @@ class Player(BaseSprite):
         self.gravity = 0.8
         self.on_ground = False
 
-    def update(self):
+    def update(self, world=None):
         keys = pg.key.get_pressed()
 
         # 1. Kích hoạt Attack
@@ -20,28 +20,63 @@ class Player(BaseSprite):
             self.state = "attack"
             self.frame_index = 0 # Reset về frame đầu tiên ngay lập tức
 
+        dx = 0
+        dy = 0
+
         # 2. Logic di chuyển & Jump (CHỈ chạy khi không tấn công)
         if not self.is_attacking:
-            if keys[pg.K_RIGHT] and self.hitbox.right <= SC_WIDTH:
-                self.hitbox.x += self.speed
+            if keys[pg.K_d]:
+                dx = self.speed
                 self.state = "walk"
                 self.flip = False
-            elif keys[pg.K_LEFT] and self.hitbox.left >= 0:
-                self.hitbox.x -= self.speed
+            elif keys[pg.K_a]:
+                dx = -self.speed
                 self.state = "walk"
                 self.flip = True
             else:
                 self.state = "idle"
 
             if keys[pg.K_SPACE] and self.on_ground:
-                self.direction_y = -15
+                self.direction_y = self.jump_speed
                 self.on_ground = False
         
         # 3. Trọng lực (Vẫn chạy để nhân vật rơi xuống khi đang đánh)
         self.direction_y += self.gravity
-        self.hitbox.y += self.direction_y
+        dy = self.direction_y
 
-        # Kiểm tra va chạm sàn
+        # Kiểm tra va chạm
+        if world:
+            # X axis
+            self.hitbox.x += dx
+            if self.hitbox.left < 0:
+                self.hitbox.left = 0
+            if self.hitbox.right > world.map_width:
+                self.hitbox.right = world.map_width
+                
+            for tile in world.tiles:
+                if tile.rect.colliderect(self.hitbox):
+                    if dx > 0: # moving right
+                        self.hitbox.right = tile.rect.left
+                    elif dx < 0: # moving left
+                        self.hitbox.left = tile.rect.right
+                        
+            # Y axis
+            self.hitbox.y += dy
+            self.on_ground = False
+            for tile in world.tiles:
+                if tile.rect.colliderect(self.hitbox):
+                    if dy > 0: # falling
+                        self.hitbox.bottom = tile.rect.top
+                        self.direction_y = 0
+                        self.on_ground = True
+                    elif dy < 0: # jumping
+                        self.hitbox.top = tile.rect.bottom
+                        self.direction_y = 0
+        else:
+            self.hitbox.x += dx
+            self.hitbox.y += dy
+
+        # Kiểm tra va chạm sàn màn hình dự phòng
         if self.hitbox.bottom >= SC_HEIGHT:
             self.hitbox.bottom = SC_HEIGHT
             self.direction_y = 0
