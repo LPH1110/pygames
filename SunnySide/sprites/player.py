@@ -5,11 +5,22 @@ from constants import SC_WIDTH, SC_HEIGHT
 class Player(BaseSprite):
     def __init__(self, animations, x, y, speed):
         super().__init__(animations, x, y)
+        self.start_x = x
+        self.start_y = y
         self.speed = speed
         self.is_attacking = False
         self.direction_y = 0
         self.gravity = 0.8
         self.on_ground = False
+
+    def respawn(self):
+        """Resets the player back to the starting point"""
+        self.hitbox.x = self.start_x
+        self.hitbox.y = self.start_y
+        self.direction_y = 0
+        self.on_ground = False
+        self.is_attacking = False
+        self.state = "idle"
 
     def update(self, world=None):
         keys = pg.key.get_pressed()
@@ -76,11 +87,9 @@ class Player(BaseSprite):
             self.hitbox.x += dx
             self.hitbox.y += dy
 
-        # Kiểm tra va chạm sàn màn hình dự phòng
-        if self.hitbox.bottom >= SC_HEIGHT:
-            self.hitbox.bottom = SC_HEIGHT
-            self.direction_y = 0
-            self.on_ground = True
+        # Cảnh rơi xuống hố
+        if self.hitbox.top >= SC_HEIGHT + 200:
+            self.respawn()
 
         # Đổi state sang Jump nếu đang ở trên không và không tấn công
         if not self.on_ground and not self.is_attacking:
