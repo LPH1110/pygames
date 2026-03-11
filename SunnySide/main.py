@@ -5,6 +5,7 @@ from sprites.player import Player
 from sprites.base import SpriteSheet
 from map_generator import World 
 from sound_manager import sound_manager
+from ui import MainMenu, HUDManager, ScreenFade
 
 class Game():
     def __init__(self):
@@ -12,6 +13,8 @@ class Game():
         self.screen = pg.display.set_mode((SC_WIDTH, SC_HEIGHT))
         pg.display.set_caption(GAME_TITLE)
         self.clock = pg.time.Clock()
+        
+        self.game_state = "MENU" # Initialize game in MENU state
 
         self.world = World(TILE_SIZE, TILE_PATH)
         self.world.process_data('./level_data.csv') 
@@ -23,10 +26,9 @@ class Game():
         # Camera scroll variable
         self.scroll = 0
 
-        # UI Elements
-        self.coin_font = pg.font.SysFont("verdana", 24, bold=True)
-        self.coin_img = pg.image.load("assets/HUD/coins_hud.png").convert_alpha()
-        self.coin_img = pg.transform.scale(self.coin_img, (32, 32))
+        self.main_menu = MainMenu()
+        self.hud_manager = HUDManager()
+        self.screen_fade = ScreenFade((0, 0, 0), speed=5) # Black mask fading at a speed of 5 out of 255/frame
 
         player_animations = {
             "idle": SpriteSheet(PLAYER_IDLE_PATH, num_frames=9, scale=PLAYER_SCALE),
@@ -36,39 +38,80 @@ class Game():
         }
         
         self.player = Player(player_animations, 100, 100, speed=2)
+        
+    def reset_game(self):
+        self.world = World(TILE_SIZE, TILE_PATH)
+        self.world.process_data('./level_data.csv')
+        self.player.respawn()
+        self.player.health = MAX_HEALTH
+        self.scroll = 0
+    
+    def draw_menu_screen(self, events):
+        new_state = self.main_menu.update(events)
+        if new_state == "PLAYING":
+            self.game_state = "FADING" 
+            self.screen_fade.reset()
+        else:
+            self.main_menu.draw(self.screen)
+    
+    def draw_fading_effect(self):
+        # Draw the static first frame of the game so the fade has something to reveal
+        bg_width = self.background_image.get_width()
+        for i in range(5):
+            self.screen.blit(self.background_image, ((i * bg_width) - self.scroll * 0.5, 0))
+        self.world.draw(self.screen, self.scroll)
+        self.player.draw(self.screen, self.scroll)
+        self.hud_manager.draw(self.screen, self.player)
+
+        # Overlay the fade
+        if self.screen_fade.draw_fade_in(self.screen):
+            # Transition complete -> Move to actual playing state
+            self.reset_game()
+            self.game_state = "PLAYING"
+
+    def draw_playing_screen(self):
+        # Vẽ Background Lặp Kết Hợp Scroll (parallax 0.5)
+        bg_width = self.background_image.get_width()
+        for i in range(5): # Số lượng ảnh cần thiết để phủ kín screen khi cuộn (tùy chỉnh nếu map dài)
+            self.screen.blit(self.background_image, ((i * bg_width) - self.scroll * 0.5, 0))
+
+        self.scroll = self.player.hitbox.centerx - SC_WIDTH // 2
+        
+        if self.scroll < 0:
+            self.scroll = 0
+        if self.scroll > self.world.map_width - SC_WIDTH:
+            self.scroll = self.world.map_width - SC_WIDTH
+
+        self.world.update()
+        self.world.draw(self.screen, self.scroll)
+
+        self.player.update(self.world)
+        self.player.draw(self.screen, self.scroll)
+        
+        # Check for death condition
+        if self.player.health <= 0:
+            self.game_state = "MENU"
     
     def run(self):
         running = True
 
         while running:
-            # Vẽ Background Lặp Kết Hợp Scroll (parallax 0.5)
-            bg_width = self.background_image.get_width()
-            for i in range(5): # Số lượng ảnh cần thiết để phủ kín screen khi cuộn (tùy chỉnh nếu map dài)
-                self.screen.blit(self.background_image, ((i * bg_width) - self.scroll * 0.5, 0))
-
-            for e in pg.event.get():
+            # Handle Events First
+            events = pg.event.get()
+            for e in events:
                 if e.type == pg.QUIT:
                     running = False
 
-            self.scroll = self.player.hitbox.centerx - SC_WIDTH // 2
+            if self.game_state == "MENU":
+                self.draw_menu_screen(events)
             
-            if self.scroll < 0:
-                self.scroll = 0
-            if self.scroll > self.world.map_width - SC_WIDTH:
-                self.scroll = self.world.map_width - SC_WIDTH
-
-            self.world.update()
-            self.world.draw(self.screen, self.scroll)
-
-            self.player.update(self.world)
-            self.player.draw(self.screen, self.scroll)
+            elif self.game_state == "FADING":
+                self.draw_fading_effect()
             
-            # --- Draw UI ---
-            self.screen.blit(self.coin_img, (20, 20))
-            coin_text = self.coin_font.render(f"x {self.player.coins}", True, (255, 255, 255))
-            coin_text_outline = self.coin_font.render(f"x {self.player.coins}", True, (0, 0, 0))
-            self.screen.blit(coin_text_outline, (62, 22))
-            self.screen.blit(coin_text, (60, 20))
+            elif self.game_state == "PLAYING":
+                self.draw_playing_screen()
+                # --- Draw UI ---
+                self.hud_manager.draw(self.screen, self.player)
 
             pg.display.update()
             self.clock.tick(FPS)

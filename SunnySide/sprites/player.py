@@ -16,6 +16,9 @@ class Player(BaseSprite):
         self.gravity = 0.8
         self.on_ground = False
         self.coins = 0
+        from constants import MAX_HEALTH
+        self.health = MAX_HEALTH
+        self.invincible_timer = 0
 
     def respawn(self):
         """Resets the player back to the starting point"""
@@ -25,21 +28,27 @@ class Player(BaseSprite):
         self.on_ground = False
         self.is_attacking = False
         self.state = "idle"
+        self.invincible_timer = 0
 
-    def update(self, world=None):
+    def take_damage(self, amount=1):
+        if self.invincible_timer == 0:
+            self.health -= amount
+            if self.health > 0:
+                from constants import I_FRAMES
+                self.invincible_timer = I_FRAMES
+        print("Health:", self.health)
+
+    def _handle_input(self):
+        """Processes keyboard inputs to calculate movement intentions and attacking."""
         keys = pg.key.get_pressed()
+        dx = 0
 
-        # 1. Kích hoạt Attack
         if keys[pg.K_j] and not self.is_attacking:
             self.is_attacking = True
             self.state = "attack"
             sound_manager.play('attack')
-            self.frame_index = 0 # Reset về frame đầu tiên ngay lập tức
+            self.frame_index = 0
 
-        dx = 0
-        dy = 0
-
-        # 2. Logic di chuyển & Jump (CHỈ chạy khi không tấn công)
         if not self.is_attacking:
             if keys[pg.K_d]:
                 dx = self.speed
@@ -55,60 +64,95 @@ class Player(BaseSprite):
             if keys[pg.K_SPACE] and self.on_ground:
                 self.direction_y = self.jump_speed
                 self.on_ground = False
-        
-        # 3. Trọng lực (Vẫn chạy để nhân vật rơi xuống khi đang đánh)
-        self.direction_y += self.gravity
-        dy = self.direction_y
-
-        # Kiểm tra va chạm
-        if world:
-            # X axis
-            self.hitbox.x += dx
-            if self.hitbox.left < 0:
-                self.hitbox.left = 0
-            if self.hitbox.right > world.map_width:
-                self.hitbox.right = world.map_width
                 
-            for tile in world.tiles:
-                if tile.rect.colliderect(self.hitbox):
-                    if dx > 0: # moving right
-                        self.hitbox.right = tile.rect.left
-                    elif dx < 0: # moving left
-                        self.hitbox.left = tile.rect.right
-                        
-            # Y axis
-            self.hitbox.y += dy
-            self.on_ground = False
-            for tile in world.tiles:
-                if tile.rect.colliderect(self.hitbox):
-                    if dy > 0: # falling
-                        self.hitbox.bottom = tile.rect.top
-                        self.direction_y = 0
-                        self.on_ground = True
-                    elif dy < 0: # jumping
-                        self.hitbox.top = tile.rect.bottom
-                        self.direction_y = 0
-        else:
-            self.hitbox.x += dx
-            self.hitbox.y += dy
+        return dx
+
+    def _apply_gravity(self):
+        """Applies gravity to Y-velocity."""
+        self.direction_y += self.gravity
+        return self.direction_y
+
+    def _handle_x_collisions(self, dx, world):
+        """Moves the player on the X axis and resolves tile collisions."""
+        self.hitbox.x += dx
+        
+        if not world:
+            return
+
+        if self.hitbox.left < 0:
+            self.hitbox.left = 0
+        if self.hitbox.right > world.map_width:
+            self.hitbox.right = world.map_width
             
-        # Kiểm tra va chạm với Coins
-        if world:
-            for coin in list(world.coins):
-                if self.hitbox.colliderect(coin.hitbox):
-                    sound_manager.play('coin')
-                    coin.kill()
-                    self.coins += 1
+        for tile in world.tiles:
+            if tile.rect.colliderect(self.hitbox):
+                if dx > 0: # moving right
+                    self.hitbox.right = tile.rect.left
+                elif dx < 0: # moving left
+                    self.hitbox.left = tile.rect.right
 
-        # Cảnh rơi xuống hố
+    def _handle_y_collisions(self, dy, world):
+        """Moves the player on the Y axis and resolves tile collisions."""
+        self.hitbox.y += dy
+        self.on_ground = False
+        
+        if not world:
+            return
+            
+        for tile in world.tiles:
+            if tile.rect.colliderect(self.hitbox):
+                if dy > 0: # falling down
+                    self.hitbox.bottom = tile.rect.top
+                    self.direction_y = 0
+                    self.on_ground = True
+                elif dy < 0: # jumping up into a ceiling
+                    self.hitbox.top = tile.rect.bottom
+                    self.direction_y = 0
+
+    def _handle_interactions(self, world):
+        """Handles collisions with collectibles and out-of-bounds death zones."""
+        if not world:
+            return
+            
+        # Coin Collection
+        for coin in list(world.coins):
+            if self.hitbox.colliderect(coin.hitbox):
+                sound_manager.play('coin')
+                coin.kill()
+                self.coins += 1
+
+        # Death Pits
         if self.hitbox.top >= SC_HEIGHT + 200:
-            self.respawn()
+            self.take_damage(20)
+            if self.health > 0:
+                self.respawn()
 
-        # Đổi state sang Jump nếu đang ở trên không và không tấn công
+    def _update_state_timers(self):
+        """Updates invincibility timers and determines fallback visual states."""
+        if self.invincible_timer > 0:
+            self.invincible_timer -= 1
+
         if not self.on_ground and not self.is_attacking:
             self.state = "jump"
 
-        # 4. Cập nhật Animation và xử lý kết thúc Attack
         animation_finished = self.animate()
         if animation_finished and self.state == "attack":
-            self.is_attacking = False # Mở khóa trạng thái
+            self.is_attacking = False
+
+    def update(self, world=None):
+        """Main game loop update for the player character."""
+        dx = self._handle_input()
+        dy = self._apply_gravity()
+
+        self._handle_x_collisions(dx, world)
+        self._handle_y_collisions(dy, world)
+        
+        self._handle_interactions(world)
+        self._update_state_timers()
+
+    def draw(self, surface: pg.Surface, scroll: int = 0):
+        # Override draw behavior to implement i-frame blinking
+        if self.invincible_timer > 0:
+            if self.invincible_timer % 10 < 5:  # Blink effect
+                return
+        super().draw(surface, scroll)

@@ -15,3 +15,9 @@ TILE_PATH = "./Tileset.png"
 SOUND_PATH = "./assets/Sounds/"
 
 PLAYER_SCALE = 2
+MAX_HEALTH = 100
+I_FRAMES = 60 # 1 second of invincibility at 60 FPS
+
+# HUD ASSET PATHS
+HEALTH_BAR_WIDTH_MAX = 200
+HEALTH_BAR_HEIGHT = 20
